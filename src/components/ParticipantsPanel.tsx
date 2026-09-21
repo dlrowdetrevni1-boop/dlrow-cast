@@ -53,13 +53,13 @@ export const ParticipantsPanel: React.FC<ParticipantsPanelProps> = ({
   return (
     <div
       id="participants-panel"
-      className="w-full sm:w-80 md:w-96 h-full bg-black/95 backdrop-blur-xl border-l border-zinc-800 flex flex-col z-30 fixed sm:relative right-0 top-0 shadow-2xl"
+      className="w-full sm:w-80 md:w-96 h-full bg-zinc-950/95 backdrop-blur-xl flex flex-col z-30 fixed sm:relative right-0 top-0 shadow-2xl shadow-black/80"
     >
       {/* Panel Header */}
-      <div className="h-16 px-4 border-b border-zinc-800 flex items-center justify-between">
+      <div className="h-16 px-4 flex items-center justify-between shadow-md shadow-black/30 bg-zinc-950">
         <div className="flex items-center gap-2">
           <h2 className="text-sm font-bold text-zinc-100">Participantes</h2>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 font-mono font-semibold">
+          <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-900 shadow-sm text-zinc-300 font-mono font-semibold">
             {participants.length}
           </span>
         </div>
@@ -73,7 +73,7 @@ export const ParticipantsPanel: React.FC<ParticipantsPanelProps> = ({
       </div>
 
       {/* Participants List */}
-      <div className="flex-1 p-3 overflow-y-auto space-y-2">
+      <div className="flex-1 p-3 overflow-y-auto space-y-2.5">
         {participants.map((p) => {
           const isMe = p.id === currentUser.id;
           const isSharer = p.id === activeSharerId;
@@ -84,7 +84,7 @@ export const ParticipantsPanel: React.FC<ParticipantsPanelProps> = ({
           return (
             <div
               key={p.id}
-              className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800/80 hover:border-zinc-700/60 transition-colors space-y-2.5"
+              className="p-3.5 rounded-2xl bg-zinc-900/60 shadow-md shadow-black/30 hover:bg-zinc-900/80 transition-all space-y-2.5"
             >
               <div className="flex items-center justify-between">
                 {/* Avatar & Name */}
@@ -98,7 +98,7 @@ export const ParticipantsPanel: React.FC<ParticipantsPanelProps> = ({
                       isSpeaking={p.isSpeaking && !p.isMuted}
                     />
                     {p.isSpeaking && !p.isMuted && (
-                      <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-zinc-950" />
+                      <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 shadow-sm" />
                     )}
                   </div>
 
@@ -112,13 +112,13 @@ export const ParticipantsPanel: React.FC<ParticipantsPanelProps> = ({
 
                     <div className="flex items-center gap-1 mt-0.5">
                       {isUserAdmin && (
-                        <span className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400 font-semibold border border-amber-500/20">
+                        <span className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-400 font-semibold shadow-sm">
                           <Shield className="w-2.5 h-2.5" />
                           Host
                         </span>
                       )}
                       {isSharer && (
-                        <span className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.2 rounded bg-red-500/15 text-red-400 font-semibold border border-red-500/20">
+                        <span className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.2 rounded-full bg-red-500/15 text-red-400 font-semibold shadow-sm">
                           <Radio className="w-2.5 h-2.5" />
                           Transmitindo
                         </span>
@@ -156,7 +156,7 @@ export const ParticipantsPanel: React.FC<ParticipantsPanelProps> = ({
                       </button>
 
                       {menuOpenId === p.id && (
-                        <div className="absolute right-0 top-full mt-1 w-44 py-1 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl z-30 text-xs">
+                        <div className="absolute right-0 top-full mt-1 w-44 py-1.5 bg-zinc-900 rounded-2xl shadow-2xl shadow-black/80 z-30 text-xs">
                           {!p.isMuted && (
                             <button
                               onClick={() => {
@@ -198,7 +198,7 @@ export const ParticipantsPanel: React.FC<ParticipantsPanelProps> = ({
 
               {/* Per-Participant Volume & Individual Mute (Available to anyone for remote participants) */}
               {!isMe && (
-                <div className="pt-2 border-t border-zinc-800/60 flex items-center gap-2 text-xs">
+                <div className="pt-2 flex items-center gap-2 text-xs">
                   <button
                     onClick={() => onToggleParticipantMute(p.id)}
                     className={`p-1 rounded transition-colors ${

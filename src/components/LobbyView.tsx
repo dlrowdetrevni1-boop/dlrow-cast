@@ -110,9 +110,9 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
   return (
     <div className="w-full flex-1 flex flex-col bg-black text-zinc-100">
       {/* Top Bar */}
-      <header className="h-16 border-b border-zinc-800/80 px-4 sm:px-6 flex items-center justify-between sticky top-0 bg-black/90 backdrop-blur-md z-20">
+      <header className="h-16 shadow-lg shadow-black/60 px-4 sm:px-6 flex items-center justify-between sticky top-0 bg-zinc-950/90 backdrop-blur-md z-20">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-200">
+          <div className="w-8 h-8 rounded-lg bg-zinc-900 shadow-md shadow-black/40 flex items-center justify-center text-zinc-200">
             <Radio className="w-4 h-4 text-zinc-200" />
           </div>
           <div>
@@ -132,7 +132,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
                 setTimeout(() => setCopiedAppUrl(false), 2500);
               }
             }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors text-xs font-medium"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white shadow-md shadow-black/30 transition-colors text-xs font-medium"
             title="Copiar link do site para enviar para amigos"
           >
             {copiedAppUrl ? <Check className="w-3.5 h-3.5 text-zinc-200" /> : <Share2 className="w-3.5 h-3.5" />}
@@ -141,7 +141,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
 
           <button
             onClick={() => window.open(window.location.href, "_blank")}
-            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition-colors text-xs font-medium"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white shadow-md shadow-black/30 transition-colors text-xs font-medium"
             title="Abrir em Nova Aba para compartilhamento de tela sem restrições de iframe"
           >
             <ExternalLink className="w-3.5 h-3.5" />
@@ -150,7 +150,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
 
           <button
             onClick={onOpenHistory}
-            className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 transition-colors"
+            className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 shadow-md shadow-black/30 transition-colors"
             title="Histórico de Sessões"
           >
             <History className="w-4 h-4" />
@@ -158,7 +158,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
 
           <button
             onClick={onOpenProfile}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 transition-colors text-xs font-medium"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-200 shadow-md shadow-black/30 transition-colors text-xs font-medium"
           >
             <Avatar
               name={currentUser.name}
@@ -175,7 +175,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
       <main className="w-full max-w-4xl mx-auto px-4 py-8 sm:py-14 flex-1 flex flex-col">
         {/* Error Alert */}
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-zinc-900 border border-zinc-700 text-zinc-200 text-xs font-medium flex items-center justify-between">
+          <div className="mb-6 p-4 rounded-xl bg-zinc-900 shadow-lg shadow-black/50 text-zinc-200 text-xs font-medium flex items-center justify-between">
             <span>{error}</span>
           </div>
         )}
@@ -193,9 +193,9 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
         {/* Action Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
           {/* Create Room Card */}
-          <div className="p-5 sm:p-6 rounded-xl bg-zinc-900/50 border border-zinc-800 flex flex-col justify-between hover:border-zinc-700/80 transition-colors">
+          <div className="p-5 sm:p-6 rounded-2xl bg-zinc-900/60 shadow-xl shadow-black/50 flex flex-col justify-between transition-all">
             <div>
-              <div className="w-9 h-9 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-200 flex items-center justify-center mb-4">
+              <div className="w-9 h-9 rounded-lg bg-zinc-800 shadow-md shadow-black/40 text-zinc-200 flex items-center justify-center mb-4">
                 <Plus className="w-4 h-4" />
               </div>
               <h2 className="text-base font-semibold text-white mb-1">Criar Sala</h2>
@@ -214,7 +214,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
                     placeholder="Ex: Apresentação, Transmissão ou Jogo"
                     value={roomTitle}
                     onChange={(e) => setRoomTitle(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
+                    className="w-full bg-zinc-950 shadow-inner shadow-black/60 rounded-xl px-3 py-2 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600 transition-colors"
                   />
                 </div>
 
@@ -222,14 +222,14 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
                   <label className="block text-[11px] font-medium text-zinc-400 mb-1.5">
                     Modo Inicial
                   </label>
-                  <div className="grid grid-cols-2 gap-1.5">
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setSelectedPreset("game")}
-                      className={`p-2 rounded-lg border text-left text-xs transition-colors flex items-center gap-2 ${
+                      className={`p-2.5 rounded-xl text-left text-xs transition-all flex items-center gap-2 ${
                         selectedPreset === "game"
-                          ? "bg-zinc-800 border-zinc-600 text-white font-medium"
-                          : "bg-zinc-950 border-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+                          ? "bg-zinc-800 text-white font-semibold shadow-md shadow-black/50"
+                          : "bg-zinc-950/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 shadow-sm shadow-black/30"
                       }`}
                     >
                       <Gamepad2 className="w-3.5 h-3.5" />
@@ -238,10 +238,10 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setSelectedPreset("movie")}
-                      className={`p-2 rounded-lg border text-left text-xs transition-colors flex items-center gap-2 ${
+                      className={`p-2.5 rounded-xl text-left text-xs transition-all flex items-center gap-2 ${
                         selectedPreset === "movie"
-                          ? "bg-zinc-800 border-zinc-600 text-white font-medium"
-                          : "bg-zinc-950 border-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+                          ? "bg-zinc-800 text-white font-semibold shadow-md shadow-black/50"
+                          : "bg-zinc-950/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 shadow-sm shadow-black/30"
                       }`}
                     >
                       <Film className="w-3.5 h-3.5" />
@@ -250,10 +250,10 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setSelectedPreset("reading")}
-                      className={`p-2 rounded-lg border text-left text-xs transition-colors flex items-center gap-2 ${
+                      className={`p-2.5 rounded-xl text-left text-xs transition-all flex items-center gap-2 ${
                         selectedPreset === "reading"
-                          ? "bg-zinc-800 border-zinc-600 text-white font-medium"
-                          : "bg-zinc-950 border-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+                          ? "bg-zinc-800 text-white font-semibold shadow-md shadow-black/50"
+                          : "bg-zinc-950/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 shadow-sm shadow-black/30"
                       }`}
                     >
                       <BookOpen className="w-3.5 h-3.5" />
@@ -262,10 +262,10 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setSelectedPreset("screen")}
-                      className={`p-2 rounded-lg border text-left text-xs transition-colors flex items-center gap-2 ${
+                      className={`p-2.5 rounded-xl text-left text-xs transition-all flex items-center gap-2 ${
                         selectedPreset === "screen"
-                          ? "bg-zinc-800 border-zinc-600 text-white font-medium"
-                          : "bg-zinc-950 border-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+                          ? "bg-zinc-800 text-white font-semibold shadow-md shadow-black/50"
+                          : "bg-zinc-950/80 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 shadow-sm shadow-black/30"
                       }`}
                     >
                       <Monitor className="w-3.5 h-3.5" />
@@ -279,7 +279,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
             <button
               id="lobby-create-room-btn"
               onClick={() => onCreateRoom(roomTitle)}
-              className="w-full py-2.5 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 font-semibold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
+              className="w-full py-2.5 rounded-xl bg-zinc-100 hover:bg-white text-zinc-950 font-semibold text-xs flex items-center justify-center gap-2 shadow-lg shadow-black/30 transition-all active:scale-[0.99]"
             >
               <span>Criar Sala e Iniciar</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -287,9 +287,9 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
           </div>
 
           {/* Join Room Card */}
-          <div className="p-5 sm:p-6 rounded-xl bg-zinc-900/50 border border-zinc-800 flex flex-col justify-between hover:border-zinc-700/80 transition-colors">
+          <div className="p-5 sm:p-6 rounded-2xl bg-zinc-900/60 shadow-xl shadow-black/50 flex flex-col justify-between transition-all">
             <div>
-              <div className="w-9 h-9 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-200 flex items-center justify-center mb-4">
+              <div className="w-9 h-9 rounded-lg bg-zinc-800 shadow-md shadow-black/40 text-zinc-200 flex items-center justify-center mb-4">
                 <LogIn className="w-4 h-4" />
               </div>
               <h2 className="text-base font-semibold text-white mb-1">Entrar na Sala</h2>
@@ -308,12 +308,12 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
                     placeholder="Ex: ABC-123 ou cole a URL"
                     value={joinCode}
                     onChange={(e) => setJoinCode(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-100 font-mono placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
+                    className="w-full bg-zinc-950 shadow-inner shadow-black/60 rounded-xl px-3 py-2 text-xs text-zinc-100 font-mono placeholder-zinc-600 focus:outline-none focus:ring-1 focus:ring-zinc-600 transition-colors"
                   />
                 </div>
 
                 {/* Pre-Call Microphone Test */}
-                <div className="p-3 rounded-lg bg-zinc-950 border border-zinc-800 space-y-2">
+                <div className="p-3 rounded-xl bg-zinc-950 shadow-inner shadow-black/50 space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-xs text-zinc-300">
                       {micActive ? (
@@ -327,10 +327,10 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setMicActive(!micActive)}
-                      className={`px-2.5 py-1 rounded text-[10px] font-medium transition-colors ${
+                      className={`px-2.5 py-1 rounded-lg text-[10px] font-medium transition-colors ${
                         micActive
-                          ? "bg-zinc-800 text-red-400 border border-zinc-700"
-                          : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                          ? "bg-zinc-800 text-red-400 shadow-sm"
+                          : "bg-zinc-900 text-zinc-300 hover:bg-zinc-800 shadow-sm"
                       }`}
                     >
                       {micActive ? "Desativar" : "Testar"}
@@ -353,7 +353,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
               id="lobby-join-room-btn"
               onClick={handleJoinSubmit}
               disabled={!joinCode.trim()}
-              className="w-full py-2.5 rounded-lg bg-zinc-100 hover:bg-white disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-950 font-semibold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
+              className="w-full py-2.5 rounded-xl bg-zinc-100 hover:bg-white disabled:bg-zinc-800/80 disabled:text-zinc-500 text-zinc-950 font-semibold text-xs flex items-center justify-center gap-2 shadow-lg shadow-black/30 transition-all active:scale-[0.99]"
             >
               <span>Entrar</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -363,7 +363,7 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
 
         {/* Recent Sessions */}
         {recentSessions.length > 0 && (
-          <div className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800">
+          <div className="p-4 sm:p-5 rounded-2xl bg-zinc-900/40 shadow-xl shadow-black/50">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
                 <History className="w-3.5 h-3.5 text-zinc-400" />
@@ -377,12 +377,12 @@ export const LobbyView: React.FC<LobbyViewProps> = ({
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               {recentSessions.slice(0, 3).map((s) => (
                 <button
                   key={s.id}
                   onClick={() => onJoinRoom(s.roomId)}
-                  className="p-3 rounded-lg bg-zinc-950 border border-zinc-800 hover:border-zinc-700 text-left transition-colors flex items-center justify-between group"
+                  className="p-3.5 rounded-xl bg-zinc-950/80 shadow-md shadow-black/40 hover:bg-zinc-900 text-left transition-all flex items-center justify-between group"
                 >
                   <div>
                     <div className="font-mono text-xs font-bold text-zinc-200 group-hover:text-white transition-colors">

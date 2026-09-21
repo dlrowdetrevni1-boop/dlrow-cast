@@ -57,7 +57,7 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
   return (
     <div
       id="main-controls-bar"
-      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 sm:gap-2.5 p-2 rounded-2xl bg-black/95 backdrop-blur-xl border border-zinc-800 shadow-2xl max-w-[95vw] overflow-x-auto"
+      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 sm:gap-2.5 p-2 rounded-2xl bg-zinc-950/95 backdrop-blur-xl shadow-2xl shadow-black/80 max-w-[95vw] overflow-x-auto"
     >
       {/* Microphone Toggle */}
       <button
@@ -65,10 +65,10 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
         onClick={onToggleMute}
         className={`relative p-3 rounded-xl flex items-center justify-center transition-all ${
           isMuted
-            ? "bg-zinc-900 text-zinc-500 border border-zinc-800"
+            ? "bg-zinc-900 text-zinc-500 shadow-md shadow-black/40"
             : isSpeaking
-            ? "bg-zinc-100 text-zinc-950 font-bold ring-2 ring-zinc-400"
-            : "bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-800"
+            ? "bg-zinc-100 text-zinc-950 font-bold shadow-lg shadow-white/20"
+            : "bg-zinc-900 hover:bg-zinc-800 text-zinc-200 shadow-md shadow-black/40"
         }`}
         title={isMuted ? "Desmutar Microfone (M)" : "Mutar Microfone (M)"}
       >
@@ -85,8 +85,8 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
           onClick={onToggleScreenShare}
           className={`px-3.5 py-3 rounded-xl flex items-center gap-2 text-xs font-semibold transition-all ${
             isScreenSharing
-              ? "bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/30"
-              : "bg-zinc-100 hover:bg-white text-zinc-950 font-semibold"
+              ? "bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/40"
+              : "bg-zinc-100 hover:bg-white text-zinc-950 font-semibold shadow-md shadow-black/30"
           }`}
           title={isScreenSharing ? "Parar Transmissão" : "Compartilhar Tela"}
         >
@@ -108,7 +108,7 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
       <button
         id="control-quality-btn"
         onClick={onOpenQualityModal}
-        className="px-2.5 sm:px-3 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 flex items-center gap-1.5 text-xs transition-colors"
+        className="px-2.5 sm:px-3 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 shadow-md shadow-black/40 flex items-center gap-1.5 text-xs transition-colors"
         title="Ajustar Resolução e Otimização"
       >
         <Sliders className="w-4 h-4 text-zinc-400" />
@@ -120,7 +120,7 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
         </span>
       </button>
 
-      <div className="h-6 w-px bg-zinc-800 mx-0.5" />
+      <div className="h-6 w-px bg-zinc-800/80 mx-0.5" />
 
       {/* Participants Toggle */}
       <button
@@ -128,13 +128,13 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
         onClick={onToggleParticipants}
         className={`relative p-3 rounded-xl flex items-center justify-center transition-colors ${
           isParticipantsOpen
-            ? "bg-zinc-800 text-white border border-zinc-600"
-            : "bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800"
+            ? "bg-zinc-800 text-white shadow-inner shadow-black/50"
+            : "bg-zinc-900 hover:bg-zinc-800 text-zinc-300 shadow-md shadow-black/40"
         }`}
         title="Participantes"
       >
         <Users className="w-5 h-5" />
-        <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-zinc-800 border border-zinc-700 text-zinc-200">
+        <span className="absolute -top-1.5 -right-1.5 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-zinc-800 shadow-md text-zinc-200">
           {participantCount}
         </span>
       </button>
@@ -145,8 +145,8 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
         onClick={onToggleChat}
         className={`relative p-3 rounded-xl flex items-center justify-center transition-colors ${
           isChatOpen
-            ? "bg-zinc-800 text-white border border-zinc-600"
-            : "bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800"
+            ? "bg-zinc-800 text-white shadow-inner shadow-black/50"
+            : "bg-zinc-900 hover:bg-zinc-800 text-zinc-300 shadow-md shadow-black/40"
         }`}
         title="Chat"
       >
@@ -163,7 +163,7 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
         <button
           id="control-share-link-btn"
           onClick={onCopyRoomLink}
-          className="p-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 transition-colors"
+          className="p-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 shadow-md shadow-black/40 transition-colors"
           title="Copiar Link de Convite da Sala"
         >
           <Share2 className="w-5 h-5 text-zinc-300" />
@@ -175,7 +175,7 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
         <button
           id="control-admin-btn"
           onClick={onOpenAdmin}
-          className="p-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 transition-colors"
+          className="p-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 shadow-md shadow-black/40 transition-colors"
           title="Painel de Moderação"
         >
           <Shield className="w-5 h-5 text-zinc-400" />
@@ -186,7 +186,7 @@ export const ControlsBar: React.FC<ControlsBarProps> = ({
       <button
         id="control-leave-btn"
         onClick={onLeaveRoom}
-        className="p-3 rounded-xl bg-zinc-900 hover:bg-red-600 hover:text-white text-zinc-400 border border-zinc-800 transition-colors"
+        className="p-3 rounded-xl bg-zinc-900 hover:bg-red-600 hover:text-white text-zinc-400 shadow-md shadow-black/40 transition-colors"
         title="Sair da Sala"
       >
         <LogOut className="w-5 h-5" />

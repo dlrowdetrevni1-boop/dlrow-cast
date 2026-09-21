@@ -337,10 +337,11 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
           break;
         }
 
-        // WebRTC Signaling: Offer, Answer, ICE Candidate
+        // WebRTC Signaling: Offer, Answer, ICE Candidate, Stream Request
         case "signal:offer":
         case "signal:answer":
-        case "signal:candidate": {
+        case "signal:candidate":
+        case "signal:request_stream": {
           if (!currentRoomId) return;
           const room = rooms.get(currentRoomId);
           if (!room) return;

@@ -51,11 +51,11 @@ export const AdminModal: React.FC<AdminModalProps> = ({
       id="admin-modal-backdrop"
       className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
     >
-      <div className="w-full max-w-lg bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="w-full max-w-lg bg-zinc-950 rounded-2xl shadow-2xl shadow-black/90 overflow-hidden flex flex-col max-h-[90vh]">
         {/* Modal Header */}
-        <div className="p-4 sm:p-5 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
+        <div className="p-4 sm:p-5 shadow-md shadow-black/30 flex items-center justify-between bg-zinc-900/90">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 shadow-sm flex items-center justify-center text-amber-400">
               <Shield className="w-4 h-4" />
             </div>
             <div>
@@ -85,10 +85,10 @@ export const AdminModal: React.FC<AdminModalProps> = ({
             </h3>
 
             {/* Lock Room Toggle */}
-            <div className="p-3 rounded-xl bg-zinc-900/70 border border-zinc-800 flex items-center justify-between">
+            <div className="p-3.5 rounded-xl bg-zinc-900/70 shadow-md shadow-black/30 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div
-                  className={`p-2 rounded-lg ${
+                  className={`p-2 rounded-lg shadow-sm ${
                     roomState.isLocked
                       ? "bg-amber-500/20 text-amber-400"
                       : "bg-zinc-800 text-zinc-400"
@@ -110,7 +110,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
               <button
                 onClick={() => onToggleLock(!roomState.isLocked)}
-                className={`px-3 py-1.5 rounded-lg font-semibold transition-colors ${
+                className={`px-3 py-1.5 rounded-lg font-semibold shadow-sm transition-colors ${
                   roomState.isLocked
                     ? "bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold"
                     : "bg-zinc-800 hover:bg-zinc-700 text-zinc-200"
@@ -121,10 +121,10 @@ export const AdminModal: React.FC<AdminModalProps> = ({
             </div>
 
             {/* Screen Share Permissions */}
-            <div className="p-3 rounded-xl bg-zinc-900/70 border border-zinc-800 flex items-center justify-between">
+            <div className="p-3.5 rounded-xl bg-zinc-900/70 shadow-md shadow-black/30 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div
-                  className={`p-2 rounded-lg ${
+                  className={`p-2 rounded-lg shadow-sm ${
                     roomState.allowParticipantScreenShare
                       ? "bg-emerald-500/20 text-emerald-400"
                       : "bg-zinc-800 text-zinc-400"
@@ -144,7 +144,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
 
               <button
                 onClick={() => onToggleScreenPermission(!roomState.allowParticipantScreenShare)}
-                className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium transition-colors"
+                className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium shadow-sm transition-colors"
               >
                 {roomState.allowParticipantScreenShare ? "Limitar ao Host" : "Liberar a Todos"}
               </button>
@@ -165,7 +165,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
             </div>
 
             {otherParticipants.length === 0 ? (
-              <div className="p-4 rounded-xl bg-zinc-900/40 border border-zinc-800/80 text-center text-zinc-500 text-xs">
+              <div className="p-4 rounded-xl bg-zinc-900/40 shadow-inner text-center text-zinc-500 text-xs">
                 Nenhum outro participante conectado no momento.
               </div>
             ) : (
@@ -173,7 +173,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                 {otherParticipants.map((p) => (
                   <div
                     key={p.id}
-                    className="p-2.5 rounded-xl bg-zinc-900/60 border border-zinc-800/80 flex items-center justify-between"
+                    className="p-3 rounded-xl bg-zinc-900/60 shadow-md shadow-black/30 flex items-center justify-between"
                   >
                     <div className="flex items-center gap-2">
                       <div
@@ -189,7 +189,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                       {!p.isMuted && (
                         <button
                           onClick={() => onForceMuteParticipant(p.id)}
-                          className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-amber-400 transition-colors"
+                          className="p-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-amber-400 shadow-sm transition-colors"
                           title="Silenciar Microfone"
                         >
                           <MicOff className="w-3.5 h-3.5" />
@@ -197,14 +197,14 @@ export const AdminModal: React.FC<AdminModalProps> = ({
                       )}
                       <button
                         onClick={() => onKickParticipant(p.id, p.name)}
-                        className="p-1.5 rounded-lg bg-zinc-800 hover:bg-orange-500/20 text-orange-400 transition-colors"
+                        className="p-1.5 rounded-lg bg-zinc-800 hover:bg-orange-500/20 text-orange-400 shadow-sm transition-colors"
                         title="Expulsar da Reunião"
                       >
                         <UserX className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => onBanParticipant(p.id, p.name)}
-                        className="p-1.5 rounded-lg bg-zinc-800 hover:bg-red-500/20 text-red-400 transition-colors"
+                        className="p-1.5 rounded-lg bg-zinc-800 hover:bg-red-500/20 text-red-400 shadow-sm transition-colors"
                         title="Banir Permanentemente"
                       >
                         <Ban className="w-3.5 h-3.5" />
@@ -217,7 +217,7 @@ export const AdminModal: React.FC<AdminModalProps> = ({
           </div>
 
           {/* Danger Zone */}
-          <div className="pt-2 border-t border-zinc-800 space-y-2">
+          <div className="pt-2 space-y-2">
             <h3 className="text-[11px] font-bold uppercase tracking-wider text-red-400 flex items-center gap-1">
               <AlertTriangle className="w-3.5 h-3.5" />
               Zona Crítica
@@ -226,26 +226,26 @@ export const AdminModal: React.FC<AdminModalProps> = ({
             {!confirmEnd ? (
               <button
                 onClick={() => setConfirmEnd(true)}
-                className="w-full py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 font-semibold text-xs flex items-center justify-center gap-2 transition-colors"
+                className="w-full py-2.5 rounded-xl bg-red-500/15 hover:bg-red-500/25 text-red-400 font-semibold text-xs flex items-center justify-center gap-2 shadow-md shadow-black/40 transition-colors"
               >
                 <Power className="w-4 h-4" />
                 <span>Encerrar Reunião para Todos</span>
               </button>
             ) : (
-              <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/40 space-y-2">
+              <div className="p-3 rounded-xl bg-red-500/20 shadow-md shadow-black/40 space-y-2">
                 <p className="text-red-300 font-medium text-xs">
                   Tem certeza? Isso desconectará todos os participantes e encerrará a transmissão.
                 </p>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={onEndRoom}
-                    className="flex-1 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-xs transition-colors"
+                    className="flex-1 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-xs shadow-md transition-colors"
                   >
                     Sim, Encerrar Reunião
                   </button>
                   <button
                     onClick={() => setConfirmEnd(false)}
-                    className="px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 font-medium text-xs transition-colors"
+                    className="px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 font-medium text-xs shadow-sm transition-colors"
                   >
                     Cancelar
                   </button>

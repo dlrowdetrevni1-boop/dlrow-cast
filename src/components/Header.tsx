@@ -52,11 +52,11 @@ export const Header: React.FC<HeaderProps> = ({
   const activeSharer = roomState?.participants.find((p) => p.id === roomState.activeScreenSharerId);
 
   return (
-    <header className="h-16 border-b border-zinc-800 bg-black/90 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between z-30">
+    <header className="h-16 shadow-lg shadow-black/50 bg-zinc-950/95 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between z-30">
       {/* Brand & Room Info */}
       <div className="flex items-center gap-3 sm:gap-5">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-200">
+          <div className="w-8 h-8 rounded-lg bg-zinc-900 shadow-md shadow-black/40 flex items-center justify-center text-zinc-200">
             <Radio className="w-4 h-4 text-zinc-200" />
           </div>
           <div>
@@ -67,8 +67,8 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {roomState && (
-          <div className="hidden sm:flex items-center gap-2 pl-3 border-l border-zinc-800">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800">
+          <div className="hidden sm:flex items-center gap-2 pl-3">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-900 shadow-md shadow-black/30">
               <span className="text-xs text-zinc-400">Sala:</span>
               <span className="font-mono text-xs font-semibold text-zinc-200 tracking-wider">
                 {roomState.id}
@@ -83,10 +83,10 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="header-copy-link-btn"
               onClick={copyRoomLink}
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
                 copied
-                  ? "bg-zinc-800 text-zinc-200 border border-zinc-600"
-                  : "bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800"
+                  ? "bg-zinc-800 text-zinc-200 shadow-inner"
+                  : "bg-zinc-900 hover:bg-zinc-800 text-zinc-300 shadow-md shadow-black/30"
               }`}
               title="Copiar link para convidar"
             >
@@ -99,7 +99,7 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Center Live Quality / Latency Status */}
       {roomState?.activeScreenSharerId && (
-        <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 border border-zinc-800 text-xs">
+        <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-900 shadow-md shadow-black/30 text-xs">
           <div className="flex items-center gap-1.5 text-zinc-300 font-medium">
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
             <span className="text-zinc-400 text-[11px] uppercase">Ao Vivo:</span>
@@ -134,7 +134,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             id="header-admin-btn"
             onClick={onOpenAdmin}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/30 hover:bg-amber-500/20 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-400 shadow-md shadow-black/30 hover:bg-amber-500/20 transition-colors"
             title="Painel de Administração da Reunião"
           >
             <Shield className="w-3.5 h-3.5 text-amber-400" />
@@ -145,7 +145,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           id="header-history-btn"
           onClick={onOpenHistory}
-          className="p-2 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 transition-colors"
+          className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 shadow-md shadow-black/30 transition-colors"
           title="Histórico de Sessões"
         >
           <History className="w-4 h-4" />
@@ -154,7 +154,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           id="header-profile-btn"
           onClick={onOpenProfile}
-          className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-800 transition-colors"
+          className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-200 shadow-md shadow-black/30 transition-colors"
           title="Editar Perfil"
         >
           <Avatar

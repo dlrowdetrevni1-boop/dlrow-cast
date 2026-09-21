@@ -200,9 +200,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       id="profile-modal-backdrop"
       className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
     >
-      <div className="w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[92vh]">
+      <div className="w-full max-w-md bg-zinc-950 rounded-2xl shadow-2xl shadow-black/90 overflow-hidden flex flex-col my-auto max-h-[92vh]">
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
+        <div className="p-4 sm:p-5 shadow-md shadow-black/30 flex items-center justify-between bg-zinc-900/90">
           <div className="flex items-center gap-2.5">
             <Avatar
               name={name}
@@ -242,10 +242,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               }}
               onDragLeave={() => setIsDragOver(false)}
               onDrop={handleDrop}
-              className={`p-4 rounded-xl border transition-all flex flex-col sm:flex-row items-center gap-4 ${
+              className={`p-4 rounded-2xl transition-all flex flex-col sm:flex-row items-center gap-4 ${
                 isDragOver
-                  ? "bg-zinc-800 border-zinc-400"
-                  : "bg-zinc-900/60 border-zinc-800"
+                  ? "bg-zinc-800 shadow-lg shadow-black/40"
+                  : "bg-zinc-900/60 shadow-md shadow-black/30"
               }`}
             >
               {/* Avatar Clickable Preview */}
@@ -282,7 +282,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isProcessing}
-                    className="px-3 py-1.5 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 font-semibold text-xs flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                    className="px-3 py-1.5 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 font-semibold text-xs flex items-center gap-1.5 shadow-sm transition-colors disabled:opacity-50"
                   >
                     <Upload className="w-3.5 h-3.5" />
                     <span>{isProcessing ? "Carregando..." : "Carregar Foto"}</span>
@@ -291,7 +291,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowUrlInput(!showUrlInput)}
-                    className="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1.5 transition-colors"
+                    className="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium flex items-center gap-1.5 shadow-sm transition-colors"
                   >
                     <LinkIcon className="w-3.5 h-3.5 text-zinc-400" />
                     <span>Link da Imagem</span>
@@ -301,7 +301,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     <button
                       type="button"
                       onClick={handleRemovePhoto}
-                      className="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 text-xs font-medium flex items-center gap-1.5 transition-colors"
+                      className="px-2.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 text-xs font-medium flex items-center gap-1.5 shadow-sm transition-colors"
                       title="Remover foto e voltar para cor e inicial"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -322,10 +322,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                       key={idx}
                       type="button"
                       onClick={() => setAvatarUrl(url)}
-                      className={`w-6 h-6 rounded-full overflow-hidden border transition-all ${
+                      className={`w-6 h-6 rounded-full overflow-hidden shadow-sm transition-all ${
                         avatarUrl === url
-                          ? "border-white ring-2 ring-white/50 scale-110"
-                          : "border-zinc-700 opacity-70 hover:opacity-100"
+                          ? "ring-2 ring-white scale-110"
+                          : "opacity-70 hover:opacity-100"
                       }`}
                       title={`Foto predefinida ${idx + 1}`}
                     >
@@ -338,7 +338,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
             {/* URL Input Form */}
             {showUrlInput && (
-              <div className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 space-y-2">
+              <div className="p-3 rounded-xl bg-zinc-900 shadow-inner shadow-black/40 space-y-2">
                 <span className="text-[11px] text-zinc-400 block font-medium">
                   Insira o link direto de uma foto:
                 </span>
@@ -348,12 +348,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     value={urlInputText}
                     onChange={(e) => setUrlInputText(e.target.value)}
                     placeholder="https://exemplo.com/minha-foto.jpg"
-                    className="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
+                    className="flex-1 bg-zinc-950 shadow-inner shadow-black/50 rounded-lg px-3 py-1.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-600"
                   />
                   <button
                     type="button"
                     onClick={handleApplyUrl}
-                    className="px-3 py-1.5 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 font-semibold text-xs transition-colors"
+                    className="px-3 py-1.5 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 font-semibold text-xs shadow-sm transition-colors"
                   >
                     Usar
                   </button>
@@ -362,7 +362,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             )}
 
             {imageError && (
-              <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
+              <div className="p-2.5 rounded-xl bg-red-500/10 shadow-sm text-red-400 text-xs flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 <span>{imageError}</span>
               </div>
@@ -380,7 +380,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               value={name}
               onChange={(e) => setName(e.target.value)}
               maxLength={24}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500 transition-colors"
+              className="w-full bg-zinc-900 shadow-inner shadow-black/50 rounded-xl px-3 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-600 transition-colors"
               placeholder="Digite seu nome..."
             />
           </div>
@@ -399,7 +399,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                   className={`w-7 h-7 rounded-full flex items-center justify-center transition-transform ${
                     avatarColor === color
                       ? "scale-110 ring-2 ring-white ring-offset-2 ring-offset-zinc-950"
-                      : "hover:scale-105"
+                      : "hover:scale-105 shadow-sm"
                   }`}
                   style={{ backgroundColor: color }}
                 >
@@ -410,7 +410,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           </div>
 
           {/* Microphone Device */}
-          <div className="space-y-2 pt-2 border-t border-zinc-800">
+          <div className="space-y-2 pt-2">
             <label className="text-[11px] font-semibold text-zinc-400 flex items-center gap-1.5">
               <Mic className="w-3.5 h-3.5 text-zinc-400" />
               <span>Microfone Principal</span>
@@ -419,7 +419,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             <select
               value={micId}
               onChange={(e) => setMicId(e.target.value)}
-              className="w-full bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:border-zinc-500 transition-colors"
+              className="w-full bg-zinc-900 shadow-inner shadow-black/50 rounded-xl px-3 py-2 text-xs text-zinc-200 focus:outline-none focus:ring-1 focus:ring-zinc-600 transition-colors"
             >
               <option value="default">Padrão do Sistema</option>
               {devices.map((d) => (
@@ -430,16 +430,16 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             </select>
 
             {/* Test Microphone Level Meter */}
-            <div className="p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 space-y-2">
+            <div className="p-3 rounded-xl bg-zinc-900/60 shadow-inner shadow-black/40 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] text-zinc-400">Teste do Microfone</span>
                 <button
                   type="button"
                   onClick={() => setTestMicActive(!testMicActive)}
-                  className={`px-2.5 py-1 rounded-md text-[10px] font-semibold transition-colors ${
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors ${
                     testMicActive
-                      ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                      : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                      ? "bg-red-500/20 text-red-400 shadow-sm"
+                      : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700 shadow-sm"
                   }`}
                 >
                   {testMicActive ? "Parar Teste" : "Testar Microfone"}
@@ -459,21 +459,21 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-zinc-800 bg-zinc-900/40 flex items-center justify-end gap-2">
+        <div className="p-4 shadow-lg shadow-black/40 bg-zinc-900/60 flex items-center justify-end gap-2">
           <button
             type="button"
             onClick={() => {
               setTestMicActive(false);
               onClose();
             }}
-            className="px-3.5 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium transition-colors"
+            className="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium shadow-sm transition-colors"
           >
             Cancelar
           </button>
           <button
             type="button"
             onClick={handleSave}
-            className="px-4 py-2 rounded-lg bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-semibold transition-colors"
+            className="px-4 py-2 rounded-xl bg-zinc-100 hover:bg-white text-zinc-950 text-xs font-semibold shadow-md shadow-black/30 transition-colors"
           >
             Salvar
           </button>

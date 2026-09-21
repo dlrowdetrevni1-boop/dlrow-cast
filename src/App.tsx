@@ -81,10 +81,16 @@ export default function App() {
   // References
   const wsRef = useRef<WebSocket | null>(null);
   const peerConnectionsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
+  const pendingIceCandidatesRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
+  const localScreenStreamRef = useRef<MediaStream | null>(null);
   const vadRef = useRef<VoiceActivityDetector | null>(null);
   const audioNodesRef = useRef<Map<string, ParticipantAudioNode>>(new Map());
   const prevBytesRef = useRef<{ current: number; timestamp: number }>({ current: 0, timestamp: 0 });
   const metricsIntervalRef = useRef<any>(null);
+
+  useEffect(() => {
+    localScreenStreamRef.current = localScreenStream;
+  }, [localScreenStream]);
 
   // Check URL on load for room code
   const [initialRoomFromUrl, setInitialRoomFromUrl] = useState<string>("");
@@ -147,6 +153,23 @@ export default function App() {
               setSessionStartTime(Date.now());
               updateUrlParam(data.state.id);
               if (soundEnabled) playNotificationSound("join");
+
+              // If someone is already screen sharing in this room, immediately request stream
+              if (
+                data.state.activeScreenSharerId &&
+                data.state.activeScreenSharerId !== currentUser.id
+              ) {
+                setTimeout(() => {
+                  if (wsRef.current?.readyState === WebSocket.OPEN) {
+                    wsRef.current.send(
+                      JSON.stringify({
+                        type: "signal:request_stream",
+                        targetId: data.state.activeScreenSharerId,
+                      })
+                    );
+                  }
+                }, 300);
+              }
               break;
             }
 
@@ -164,8 +187,8 @@ export default function App() {
               if (soundEnabled) playNotificationSound("join");
 
               // If I am currently screen sharing, create WebRTC offer for this new participant
-              if (localScreenStream && wsRef.current?.readyState === WebSocket.OPEN) {
-                createPeerConnectionAndOffer(data.participant.id, localScreenStream);
+              if (localScreenStreamRef.current && wsRef.current?.readyState === WebSocket.OPEN) {
+                createPeerConnectionAndOffer(data.participant.id, localScreenStreamRef.current);
               }
               break;
             }
@@ -248,6 +271,20 @@ export default function App() {
                 };
               });
               if (soundEnabled) playNotificationSound("message");
+
+              // If someone else started sharing, ask for the stream
+              if (data.sharerId !== currentUser.id) {
+                setTimeout(() => {
+                  if (wsRef.current?.readyState === WebSocket.OPEN) {
+                    wsRef.current.send(
+                      JSON.stringify({
+                        type: "signal:request_stream",
+                        targetId: data.sharerId,
+                      })
+                    );
+                  }
+                }, 350);
+              }
               break;
             }
 
@@ -265,11 +302,34 @@ export default function App() {
               break;
             }
 
+            // WebRTC Signaling: Stream Request (from viewer to sharer)
+            case "signal:request_stream": {
+              const { senderId } = data;
+              if (localScreenStreamRef.current && wsRef.current?.readyState === WebSocket.OPEN) {
+                createPeerConnectionAndOffer(senderId, localScreenStreamRef.current);
+              }
+              break;
+            }
+
             // WebRTC Signaling: Offer
             case "signal:offer": {
               const { senderId, sdp } = data;
               const pc = getOrCreatePeerConnection(senderId);
               await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+
+              // Drain any queued ICE candidates
+              const queued = pendingIceCandidatesRef.current.get(senderId);
+              if (queued && queued.length > 0) {
+                for (const cand of queued) {
+                  try {
+                    await pc.addIceCandidate(new RTCIceCandidate(cand));
+                  } catch (err) {
+                    console.warn("Could not add queued ice candidate in offer:", err);
+                  }
+                }
+                pendingIceCandidatesRef.current.delete(senderId);
+              }
+
               const answer = await pc.createAnswer();
               await pc.setLocalDescription(answer);
 
@@ -289,6 +349,19 @@ export default function App() {
               const pc = peerConnectionsRef.current.get(senderId);
               if (pc && pc.signalingState !== "closed") {
                 await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+
+                // Drain any queued ICE candidates
+                const queued = pendingIceCandidatesRef.current.get(senderId);
+                if (queued && queued.length > 0) {
+                  for (const cand of queued) {
+                    try {
+                      await pc.addIceCandidate(new RTCIceCandidate(cand));
+                    } catch (err) {
+                      console.warn("Could not add queued ice candidate in answer:", err);
+                    }
+                  }
+                  pendingIceCandidatesRef.current.delete(senderId);
+                }
               }
               break;
             }
@@ -296,13 +369,18 @@ export default function App() {
             // WebRTC Signaling: ICE Candidate
             case "signal:candidate": {
               const { senderId, candidate } = data;
+              if (!candidate) break;
               const pc = peerConnectionsRef.current.get(senderId);
-              if (pc && candidate) {
+              if (pc && pc.remoteDescription && pc.remoteDescription.type) {
                 try {
                   await pc.addIceCandidate(new RTCIceCandidate(candidate));
                 } catch (err) {
-                  console.warn("Could not add ice candidate:", err);
+                  console.warn("Could not add ice candidate immediately:", err);
                 }
+              } else {
+                const list = pendingIceCandidatesRef.current.get(senderId) || [];
+                list.push(candidate);
+                pendingIceCandidatesRef.current.set(senderId, list);
               }
               break;
             }
@@ -437,17 +515,18 @@ export default function App() {
       };
 
       pc.ontrack = (event) => {
-        const stream = event.streams[0];
-        if (stream) {
-          if (event.track.kind === "video") {
-            setRemoteScreenStream(stream);
-          } else if (event.track.kind === "audio") {
-            // Setup remote participant audio node with volume control
-            let audioNode = audioNodesRef.current.get(targetId);
-            if (!audioNode) {
-              audioNode = new ParticipantAudioNode(stream);
-              audioNodesRef.current.set(targetId, audioNode);
-            }
+        let stream = event.streams && event.streams[0];
+        if (!stream) {
+          stream = new MediaStream([event.track]);
+        }
+        if (event.track.kind === "video") {
+          setRemoteScreenStream(stream);
+        } else if (event.track.kind === "audio") {
+          // Setup remote participant audio node with volume control
+          let audioNode = audioNodesRef.current.get(targetId);
+          if (!audioNode) {
+            audioNode = new ParticipantAudioNode(stream);
+            audioNodesRef.current.set(targetId, audioNode);
           }
         }
       };
@@ -457,6 +536,13 @@ export default function App() {
 
   // Helper: create WebRTC offer to viewer
   const createPeerConnectionAndOffer = async (targetId: string, stream: MediaStream) => {
+    const existing = peerConnectionsRef.current.get(targetId);
+    if (existing) {
+      try {
+        existing.close();
+      } catch (e) {}
+    }
+
     const pc = new RTCPeerConnection(RTC_CONFIG);
     peerConnectionsRef.current.set(targetId, pc);
 
@@ -480,16 +566,20 @@ export default function App() {
       }
     });
 
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
+    try {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
 
-    wsRef.current?.send(
-      JSON.stringify({
-        type: "signal:offer",
-        targetId,
-        sdp: offer,
-      })
-    );
+      wsRef.current?.send(
+        JSON.stringify({
+          type: "signal:offer",
+          targetId,
+          sdp: offer,
+        })
+      );
+    } catch (err) {
+      console.warn("Failed to create offer:", err);
+    }
   };
 
   // Start microphone and speaking detector

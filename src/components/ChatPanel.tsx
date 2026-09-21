@@ -63,13 +63,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   return (
     <div
       id="chat-panel"
-      className="w-full sm:w-80 md:w-96 h-full bg-black/95 backdrop-blur-xl border-l border-zinc-800 flex flex-col z-30 fixed sm:relative right-0 top-0 shadow-2xl"
+      className="w-full sm:w-80 md:w-96 h-full bg-zinc-950/95 backdrop-blur-xl flex flex-col z-30 fixed sm:relative right-0 top-0 shadow-2xl shadow-black/80"
     >
       {/* Chat Header */}
-      <div className="h-16 px-4 border-b border-zinc-800 flex items-center justify-between">
+      <div className="h-16 px-4 flex items-center justify-between shadow-md shadow-black/30 bg-zinc-950">
         <div className="flex items-center gap-2">
           <h2 className="text-sm font-semibold text-zinc-100">Chat da Sala</h2>
-          <span className="text-[11px] px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400 font-mono">
+          <span className="text-[11px] px-2 py-0.5 rounded-full bg-zinc-900 shadow-sm text-zinc-400 font-mono">
             {messages.filter((m) => m.type === "chat").length}
           </span>
         </div>
@@ -114,10 +114,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
               return (
                 <div
                   key={msg.id}
-                  className={`p-2 rounded-lg text-xs flex items-start gap-2 ${
+                  className={`p-2.5 rounded-xl text-xs flex items-start gap-2 shadow-sm ${
                     isModeration
-                      ? "bg-amber-500/10 border border-amber-500/20 text-amber-300"
-                      : "bg-zinc-900/70 border border-zinc-800 text-zinc-400"
+                      ? "bg-amber-500/10 text-amber-300"
+                      : "bg-zinc-900/80 text-zinc-400"
                   }`}
                 >
                   {isModeration ? (
@@ -150,13 +150,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                   />
                   <span className="font-semibold text-zinc-300">{isMe ? "Você" : msg.senderName}</span>
                   {msg.senderRole === "admin" && (
-                    <span className="flex items-center gap-0.5 text-[9px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-400 font-semibold border border-amber-500/30">
+                    <span className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-400 font-semibold shadow-sm">
                       <Shield className="w-2.5 h-2.5" />
                       Host
                     </span>
                   )}
                   {isSharer && (
-                    <span className="flex items-center gap-0.5 text-[9px] px-1 py-0.2 rounded bg-red-500/20 text-red-400 font-semibold border border-red-500/30">
+                    <span className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.2 rounded-full bg-red-500/20 text-red-400 font-semibold shadow-sm">
                       <Radio className="w-2.5 h-2.5" />
                       Live
                     </span>
@@ -170,10 +170,10 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 </div>
 
                 <div
-                  className={`px-3 py-2 rounded-2xl text-xs leading-relaxed break-words shadow-sm ${
+                  className={`px-3.5 py-2.5 rounded-2xl text-xs leading-relaxed break-words shadow-md shadow-black/30 ${
                     isMe
-                      ? "bg-zinc-800 text-zinc-100 border border-zinc-700 rounded-tr-xs"
-                      : "bg-zinc-900 text-zinc-200 border border-zinc-800 rounded-tl-xs"
+                      ? "bg-zinc-800 text-zinc-100 rounded-tr-xs"
+                      : "bg-zinc-900 text-zinc-200 rounded-tl-xs"
                   }`}
                 >
                   {msg.text}
@@ -186,7 +186,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       </div>
 
       {/* Quick Emojis Bar */}
-      <div className="px-3 py-1.5 border-t border-zinc-800/80 bg-zinc-950 flex items-center gap-1 overflow-x-auto">
+      <div className="px-3 py-2 bg-zinc-950 shadow-inner shadow-black/40 flex items-center gap-1.5 overflow-x-auto">
         {QUICK_EMOJIS.map((emoji) => (
           <button
             key={emoji}
@@ -199,7 +199,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
       </div>
 
       {/* Input Form */}
-      <form onSubmit={handleSubmit} className="p-3 border-t border-zinc-800 bg-black flex items-center gap-2">
+      <form onSubmit={handleSubmit} className="p-3 shadow-lg shadow-black/50 bg-black flex items-center gap-2">
         <input
           id="chat-message-input"
           type="text"
@@ -207,13 +207,13 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           maxLength={500}
-          className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-zinc-500 transition-colors"
+          className="flex-1 bg-zinc-900 shadow-inner shadow-black/50 rounded-xl px-3 py-2.5 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-600 transition-colors"
         />
         <button
           id="chat-send-btn"
           type="submit"
           disabled={!inputText.trim()}
-          className="p-2.5 rounded-xl bg-zinc-100 hover:bg-white disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-950 font-semibold transition-colors"
+          className="p-2.5 rounded-xl bg-zinc-100 hover:bg-white disabled:bg-zinc-800 disabled:text-zinc-500 text-zinc-950 font-semibold shadow-md shadow-black/30 transition-colors"
         >
           <Send className="w-3.5 h-3.5" />
         </button>
