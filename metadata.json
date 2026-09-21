@@ -1,0 +1,6 @@
+{
+  "name": "dlrow cast",
+  "description": "Plataforma dlrow cast de transmissão em tempo real com compartilhamento de tela, áudio e voz, salas com código, chat integrado e moderação.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
