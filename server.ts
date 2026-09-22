@@ -5,7 +5,8 @@ import { WebSocketServer, WebSocket } from "ws";
 
 const app = express();
 const server = http.createServer(app);
-const PORT = 3000;
+// Respect the PORT injected by the host platform (Render, Railway, Fly...), fallback to 3000
+const PORT = Number(process.env.PORT) || 3000;
 
 app.use(express.json());
 
@@ -206,6 +207,11 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
   let currentRoomId: string | null = null;
   let currentParticipantId: string | null = null;
 
+  // Prevent an unhandled 'error' event on the socket from crashing the process
+  ws.on("error", (err) => {
+    console.warn("WebSocket connection error:", err?.message || err);
+  });
+
   ws.on("message", (data: string) => {
     try {
       const msg = JSON.parse(data.toString());
@@ -259,7 +265,7 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
           }
 
           // Check locked (allow host to rejoin)
-          if (room.isLocked && participant.id !== room.hostId && room.participants.size > 0) {
+          if (room.isLocked && participant.id !== room.hostId) {
             ws.send(
               JSON.stringify({
                 type: "error:locked",
@@ -273,8 +279,10 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
           currentRoomId = cleanRoomId;
           currentParticipantId = participant.id;
 
-          const isHost = room.hostId === participant.id || room.participants.size === 0;
-          if (isHost) {
+          // Only the registered host (room creator or auto-created owner) is admin.
+          // Prevents a stranger from hijacking host role by joining a pre-created room first.
+          const isHost = room.hostId === participant.id;
+          if (isHost && room.participants.size === 0) {
             room.hostId = participant.id;
           }
 
@@ -341,7 +349,10 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
         case "signal:offer":
         case "signal:answer":
         case "signal:candidate":
-        case "signal:request_stream": {
+        case "signal:request_stream":
+        case "signal:mic_offer":
+        case "signal:mic_answer":
+        case "signal:mic_candidate": {
           if (!currentRoomId) return;
           const room = rooms.get(currentRoomId);
           if (!room) return;
@@ -439,9 +450,11 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
             if (msg.name) participant.name = msg.name;
             if (msg.avatarColor) participant.avatarColor = msg.avatarColor;
             if (msg.avatarUrl !== undefined) participant.avatarUrl = msg.avatarUrl;
+            // Lightweight participants-only sync: avoids replaying join sounds,
+            // resetting session timers and re-requesting active streams on every edit.
             broadcastToRoom(room, {
-              type: "room:sync",
-              state: getSanitizedRoomState(room),
+              type: "room:participants_sync",
+              participants: getSanitizedRoomState(room).participants,
             });
           }
           break;
@@ -499,6 +512,25 @@ wss.on("connection", (ws: WebSocket, req: http.IncomingMessage) => {
             sharerName: sender.name,
             config: room.activeScreenConfig,
             systemMessage: sysMsg,
+          });
+          break;
+        }
+
+        // Screen share quality/config updated on the fly (no new system message)
+        case "screen:update_config": {
+          if (!currentRoomId || !currentParticipantId) return;
+          const room = rooms.get(currentRoomId);
+          if (!room) return;
+
+          // Only the active sharer can change the live stream config
+          if (room.activeScreenSharerId !== currentParticipantId) return;
+
+          room.activeScreenConfig = msg.config || room.activeScreenConfig;
+
+          broadcastToRoom(room, {
+            type: "screen:config_updated",
+            sharerId: currentParticipantId,
+            config: room.activeScreenConfig,
           });
           break;
         }
@@ -826,7 +858,16 @@ async function start() {
   if (!isProduction) {
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        // The dev server runs behind reverse proxies (Render, AI Studio, previews),
+        // so accept any Host header and origin.
+        allowedHosts: true,
+        cors: true,
+        // Attach Vite's HMR websocket to this same HTTP server so hot module
+        // replacement works through the public port/proxy (Vite 8 API).
+        ws: { server },
+      },
       appType: "spa",
     });
     app.use(vite.middlewares);

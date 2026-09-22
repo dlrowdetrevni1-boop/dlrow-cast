@@ -68,4 +68,17 @@ npm run build
 
 # Iniciar servidor de produção compilado
 npm start
+
+# Checagem de tipos (TypeScript)
+npm run lint
+
+# Testes de integração (sobe o servidor compilado e valida todos os fluxos
+# REST + WebSocket: salas, chat, moderação, sinalização WebRTC e malha de voz)
+npm test
 ```
+
+## 🔊 Como funciona o áudio
+
+- **Áudio da tela** (som do sistema/jogo/vídeo) é capturado junto com o `getDisplayMedia` e enviado na mesma conexão WebRTC da tela.
+- **Voz dos participantes** usa uma malha (mesh) WebRTC dedicada: cada par de participantes abre uma conexão de áudio própria, sinalizada pelas mensagens `signal:mic_offer` / `signal:mic_answer` / `signal:mic_candidate`. O participante com o "menor" ID sempre inicia a oferta, evitando ofertas duplicadas.
+- Se a conexão cair, o cliente tenta reconectar automaticamente (até 5 tentativas com backoff) e restabelece tela e voz.

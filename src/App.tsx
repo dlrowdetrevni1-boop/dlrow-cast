@@ -88,9 +88,62 @@ export default function App() {
   const prevBytesRef = useRef<{ current: number; timestamp: number }>({ current: 0, timestamp: 0 });
   const metricsIntervalRef = useRef<any>(null);
 
+  // Voice mesh (participant <-> participant microphone audio)
+  const micPeersRef = useRef<Map<string, RTCPeerConnection>>(new Map());
+  const pendingMicIceRef = useRef<Map<string, RTCIceCandidateInit[]>>(new Map());
+  const pendingMicOffersRef = useRef<Map<string, any>>(new Map());
+  const micReadyRef = useRef<"pending" | "ready" | "failed">("pending");
+
+  // Connection lifecycle
+  const intentionalCloseRef = useRef(false);
+  const reconnectAttemptsRef = useRef(0);
+  const reconnectTimerRef = useRef<any>(null);
+
+  // Refs mirroring state, so websocket callbacks never work with stale closures
+  const roomStateRef = useRef<RoomState | null>(null);
+  const sessionStartTimeRef = useRef<number>(0);
+  const currentRoomIdRef = useRef<string | null>(null);
+  const localMicStreamRef = useRef<MediaStream | null>(null);
+  const isMutedRef = useRef(false);
+  const isChatOpenRef = useRef(false);
+  const soundEnabledRef = useRef(true);
+  const screenConfigRef = useRef<ScreenConfig>(screenConfig);
+  const participantVolumesRef = useRef<Record<string, number>>({});
+  const participantMutesRef = useRef<Record<string, boolean>>({});
+
   useEffect(() => {
     localScreenStreamRef.current = localScreenStream;
   }, [localScreenStream]);
+  useEffect(() => {
+    roomStateRef.current = roomState;
+  }, [roomState]);
+  useEffect(() => {
+    sessionStartTimeRef.current = sessionStartTime;
+  }, [sessionStartTime]);
+  useEffect(() => {
+    currentRoomIdRef.current = currentRoomId;
+  }, [currentRoomId]);
+  useEffect(() => {
+    localMicStreamRef.current = localMicStream;
+  }, [localMicStream]);
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+  }, [isMuted]);
+  useEffect(() => {
+    isChatOpenRef.current = isChatOpen;
+  }, [isChatOpen]);
+  useEffect(() => {
+    soundEnabledRef.current = soundEnabled;
+  }, [soundEnabled]);
+  useEffect(() => {
+    screenConfigRef.current = screenConfig;
+  }, [screenConfig]);
+  useEffect(() => {
+    participantVolumesRef.current = participantVolumes;
+  }, [participantVolumes]);
+  useEffect(() => {
+    participantMutesRef.current = participantMutes;
+  }, [participantMutes]);
 
   // Check URL on load for room code
   const [initialRoomFromUrl, setInitialRoomFromUrl] = useState<string>("");
@@ -116,8 +169,17 @@ export default function App() {
   // Connect WebSocket when entering room
   const connectWebSocket = useCallback(
     (roomId: string) => {
+      intentionalCloseRef.current = false;
+      if (reconnectTimerRef.current) {
+        clearTimeout(reconnectTimerRef.current);
+        reconnectTimerRef.current = null;
+      }
       if (wsRef.current) {
-        wsRef.current.close();
+        // Mark the old socket's close as intentional so it doesn't trigger reconnect
+        const oldWs = wsRef.current;
+        (oldWs as any).__intentional = true;
+        oldWs.onclose = null;
+        oldWs.close();
       }
 
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -136,7 +198,7 @@ export default function App() {
               name: currentUser.name,
               avatarColor: currentUser.avatarColor,
               avatarUrl: currentUser.avatarUrl,
-              isMuted,
+              isMuted: isMutedRef.current,
             },
           })
         );
@@ -148,10 +210,14 @@ export default function App() {
 
           switch (data.type) {
             case "room:sync": {
+              const isReconnect = roomStateRef.current?.id === data.state.id;
               setRoomState(data.state);
               setCurrentRoomId(data.state.id);
-              setSessionStartTime(Date.now());
+              if (!isReconnect) {
+                setSessionStartTime(Date.now());
+              }
               updateUrlParam(data.state.id);
+              reconnectAttemptsRef.current = 0;
               if (soundEnabled) playNotificationSound("join");
 
               // If someone is already screen sharing in this room, immediately request stream
@@ -170,6 +236,42 @@ export default function App() {
                   }
                 }, 300);
               }
+
+              // (Re)establish voice mesh with participants that have a "greater" id than ours
+              ensureMicOffers(data.state.participants);
+
+              // If we were sharing our screen before a disconnect, announce and re-offer
+              if (isReconnect && localScreenStreamRef.current) {
+                ws.send(
+                  JSON.stringify({
+                    type: "screen:start",
+                    config: screenConfigRef.current,
+                  })
+                );
+                for (const p of data.state.participants) {
+                  if (p.id !== currentUser.id) {
+                    createPeerConnectionAndOffer(p.id, localScreenStreamRef.current);
+                  }
+                }
+              }
+              break;
+            }
+
+            // Lightweight participants refresh (e.g. someone edited their profile)
+            case "room:participants_sync": {
+              setRoomState((prev) => {
+                if (!prev) return null;
+                return { ...prev, participants: data.participants };
+              });
+              break;
+            }
+
+            // Live stream quality config changed by the sharer
+            case "screen:config_updated": {
+              setRoomState((prev) => {
+                if (!prev) return null;
+                return { ...prev, activeScreenConfig: data.config };
+              });
               break;
             }
 
@@ -189,6 +291,15 @@ export default function App() {
               // If I am currently screen sharing, create WebRTC offer for this new participant
               if (localScreenStreamRef.current && wsRef.current?.readyState === WebSocket.OPEN) {
                 createPeerConnectionAndOffer(data.participant.id, localScreenStreamRef.current);
+              }
+
+              // Voice mesh: the participant with the "smaller" id initiates the mic connection
+              if (
+                currentUser.id < data.participant.id &&
+                micReadyRef.current !== "pending" &&
+                !micPeersRef.current.has(data.participant.id)
+              ) {
+                createMicOffer(data.participant.id);
               }
               break;
             }
@@ -211,6 +322,11 @@ export default function App() {
                 pc.close();
                 peerConnectionsRef.current.delete(data.participantId);
               }
+              pendingIceCandidatesRef.current.delete(data.participantId);
+
+              // Clean up voice mesh connection for left user
+              closeMicPeer(data.participantId);
+              pendingMicOffersRef.current.delete(data.participantId);
 
               if (soundEnabled) playNotificationSound("leave");
               break;
@@ -247,12 +363,13 @@ export default function App() {
                 if (!prev) return null;
                 return {
                   ...prev,
-                  chatMessages: [...prev.chatMessages, data.message],
+                  // Cap local history so long sessions don't grow unbounded
+                  chatMessages: [...prev.chatMessages, data.message].slice(-300),
                 };
               });
 
               if (data.message.senderId !== currentUser.id) {
-                if (!isChatOpen) {
+                if (!isChatOpenRef.current) {
                   setUnreadCount((c) => c + 1);
                 }
                 if (soundEnabled) playNotificationSound("message");
@@ -299,6 +416,16 @@ export default function App() {
                 };
               });
               setRemoteScreenStream(null);
+
+              // Close the now-dead screen connection to the former sharer
+              const sharerPc = peerConnectionsRef.current.get(data.sharerId);
+              if (sharerPc) {
+                try {
+                  sharerPc.close();
+                } catch {}
+                peerConnectionsRef.current.delete(data.sharerId);
+              }
+              pendingIceCandidatesRef.current.delete(data.sharerId);
               break;
             }
 
@@ -385,11 +512,67 @@ export default function App() {
               break;
             }
 
+            // Voice Mesh Signaling: Mic Offer (participant -> participant audio)
+            case "signal:mic_offer": {
+              const { senderId, sdp } = data;
+              if (micReadyRef.current === "pending") {
+                // Our microphone isn't resolved yet; queue and answer once ready
+                pendingMicOffersRef.current.set(senderId, sdp);
+                break;
+              }
+              await acceptMicOffer(senderId, sdp);
+              break;
+            }
+
+            // Voice Mesh Signaling: Mic Answer
+            case "signal:mic_answer": {
+              const { senderId, sdp } = data;
+              const micPc = micPeersRef.current.get(senderId);
+              if (micPc && micPc.signalingState !== "closed") {
+                try {
+                  await micPc.setRemoteDescription(new RTCSessionDescription(sdp));
+                  const queuedMic = pendingMicIceRef.current.get(senderId);
+                  if (queuedMic && queuedMic.length > 0) {
+                    for (const cand of queuedMic) {
+                      try {
+                        await micPc.addIceCandidate(new RTCIceCandidate(cand));
+                      } catch (err) {
+                        console.warn("Could not add queued mic ice candidate:", err);
+                      }
+                    }
+                    pendingMicIceRef.current.delete(senderId);
+                  }
+                } catch (err) {
+                  console.warn("Failed to apply mic answer:", err);
+                }
+              }
+              break;
+            }
+
+            // Voice Mesh Signaling: Mic ICE Candidate
+            case "signal:mic_candidate": {
+              const { senderId, candidate } = data;
+              if (!candidate) break;
+              const micPc = micPeersRef.current.get(senderId);
+              if (micPc && micPc.remoteDescription && micPc.remoteDescription.type) {
+                try {
+                  await micPc.addIceCandidate(new RTCIceCandidate(candidate));
+                } catch (err) {
+                  console.warn("Could not add mic ice candidate immediately:", err);
+                }
+              } else {
+                const list = pendingMicIceRef.current.get(senderId) || [];
+                list.push(candidate);
+                pendingMicIceRef.current.set(senderId, list);
+              }
+              break;
+            }
+
             // Moderation Events
             case "admin:force_muted": {
               setIsMuted(true);
-              if (localMicStream) {
-                localMicStream.getAudioTracks().forEach((t) => (t.enabled = false));
+              if (localMicStreamRef.current) {
+                localMicStreamRef.current.getAudioTracks().forEach((t) => (t.enabled = false));
               }
               if (soundEnabled) playNotificationSound("moderation");
               alert(data.message || "Seu microfone foi silenciado pelo administrador.");
@@ -490,14 +673,53 @@ export default function App() {
 
       ws.onclose = () => {
         console.log("WebSocket disconnected");
+        if (intentionalCloseRef.current) return;
+
+        // Unexpected drop: tear down dead media connections but keep the UI,
+        // then try to rejoin automatically with exponential backoff.
+        peerConnectionsRef.current.forEach((pc) => {
+          try {
+            pc.close();
+          } catch {}
+        });
+        peerConnectionsRef.current.clear();
+        pendingIceCandidatesRef.current.clear();
+        closeAllMicPeers();
+        setRemoteScreenStream(null);
+
+        const attempt = reconnectAttemptsRef.current;
+        if (attempt < 5 && currentRoomIdRef.current) {
+          reconnectAttemptsRef.current = attempt + 1;
+          const delay = Math.min(1000 * Math.pow(2, attempt), 8000);
+          console.log(`Reconnecting to room in ${delay}ms (attempt ${attempt + 1})`);
+          reconnectTimerRef.current = setTimeout(() => {
+            reconnectTimerRef.current = null;
+            if (!intentionalCloseRef.current && currentRoomIdRef.current) {
+              connectWebSocket(currentRoomIdRef.current);
+            }
+          }, delay);
+        } else {
+          setErrorMessage("Conexão perdida com o servidor. Tente entrar novamente.");
+          leaveRoom();
+        }
       };
     },
-    [currentUser, isMuted, soundEnabled, localScreenStream]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [currentUser]
   );
 
   // Helper: get or create RTCPeerConnection for viewer
   const getOrCreatePeerConnection = (targetId: string): RTCPeerConnection => {
     let pc = peerConnectionsRef.current.get(targetId);
+    // Recreate when closed or stuck mid-negotiation (e.g. duplicate offer after reconnect)
+    if (pc && pc.signalingState !== "closed" && pc.signalingState !== "stable") {
+      try {
+        pc.close();
+      } catch {}
+      peerConnectionsRef.current.delete(targetId);
+      pendingIceCandidatesRef.current.delete(targetId);
+      pc = undefined;
+    }
     if (!pc || pc.signalingState === "closed") {
       pc = new RTCPeerConnection(RTC_CONFIG);
       peerConnectionsRef.current.set(targetId, pc);
@@ -521,14 +743,9 @@ export default function App() {
         }
         if (event.track.kind === "video") {
           setRemoteScreenStream(stream);
-        } else if (event.track.kind === "audio") {
-          // Setup remote participant audio node with volume control
-          let audioNode = audioNodesRef.current.get(targetId);
-          if (!audioNode) {
-            audioNode = new ParticipantAudioNode(stream);
-            audioNodesRef.current.set(targetId, audioNode);
-          }
         }
+        // Note: the screen stream's system audio is played by the <video> element.
+        // Creating an extra audio node here would play it twice (echo).
       };
     }
     return pc;
@@ -582,6 +799,155 @@ export default function App() {
     }
   };
 
+  // ------------------------------------------------------------------
+  // Voice Mesh: participant <-> participant microphone audio (full mesh)
+  // ------------------------------------------------------------------
+
+  // Create (or reuse) a per-participant audio node honoring current volume/mute
+  const attachRemoteAudioNode = (participantId: string, stream: MediaStream) => {
+    let audioNode = audioNodesRef.current.get(participantId);
+    if (!audioNode) {
+      audioNode = new ParticipantAudioNode(stream);
+      audioNodesRef.current.set(participantId, audioNode);
+      const savedVolume = participantVolumesRef.current[participantId];
+      if (savedVolume !== undefined) audioNode.setVolume(savedVolume);
+      if (participantMutesRef.current[participantId]) audioNode.setMute(true);
+    }
+    return audioNode;
+  };
+
+  const wireMicPeer = (pc: RTCPeerConnection, peerId: string) => {
+    pc.onicecandidate = (event) => {
+      if (event.candidate && wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(
+          JSON.stringify({
+            type: "signal:mic_candidate",
+            targetId: peerId,
+            candidate: event.candidate,
+          })
+        );
+      }
+    };
+
+    pc.ontrack = (event) => {
+      if (event.track.kind === "audio") {
+        const stream = event.streams[0] || new MediaStream([event.track]);
+        attachRemoteAudioNode(peerId, stream);
+      }
+    };
+  };
+
+  const addLocalMicTracks = (pc: RTCPeerConnection) => {
+    const stream = localMicStreamRef.current;
+    if (!stream || pc.getSenders().length > 0) return;
+    stream.getAudioTracks().forEach((track) => pc.addTrack(track, stream));
+  };
+
+  // Initiate a mic connection towards a participant (we only initiate towards "greater" ids)
+  const createMicOffer = async (targetId: string) => {
+    const existing = micPeersRef.current.get(targetId);
+    if (existing && existing.signalingState !== "closed") return;
+
+    const pc = new RTCPeerConnection(RTC_CONFIG);
+    micPeersRef.current.set(targetId, pc);
+    wireMicPeer(pc, targetId);
+    addLocalMicTracks(pc);
+
+    try {
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      wsRef.current?.send(
+        JSON.stringify({
+          type: "signal:mic_offer",
+          targetId,
+          sdp: offer,
+        })
+      );
+    } catch (err) {
+      console.warn("Failed to create mic offer:", err);
+    }
+  };
+
+  // Answer an incoming mic offer (also handles re-offers/renegotiation)
+  const acceptMicOffer = async (senderId: string, sdp: any) => {
+    let pc = micPeersRef.current.get(senderId);
+    if (!pc || pc.signalingState === "closed") {
+      pc = new RTCPeerConnection(RTC_CONFIG);
+      micPeersRef.current.set(senderId, pc);
+      wireMicPeer(pc, senderId);
+    }
+    addLocalMicTracks(pc);
+
+    try {
+      await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+
+      const queued = pendingMicIceRef.current.get(senderId);
+      if (queued && queued.length > 0) {
+        for (const cand of queued) {
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(cand));
+          } catch (err) {
+            console.warn("Could not add queued mic ice candidate in offer:", err);
+          }
+        }
+        pendingMicIceRef.current.delete(senderId);
+      }
+
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      wsRef.current?.send(
+        JSON.stringify({
+          type: "signal:mic_answer",
+          targetId: senderId,
+          sdp: answer,
+        })
+      );
+    } catch (err) {
+      console.warn("Failed to answer mic offer:", err);
+    }
+  };
+
+  const closeMicPeer = (peerId: string) => {
+    const pc = micPeersRef.current.get(peerId);
+    if (pc) {
+      try {
+        pc.close();
+      } catch {}
+      micPeersRef.current.delete(peerId);
+    }
+    pendingMicIceRef.current.delete(peerId);
+    const audioNode = audioNodesRef.current.get(peerId);
+    if (audioNode) {
+      audioNode.dispose();
+      audioNodesRef.current.delete(peerId);
+    }
+  };
+
+  const closeAllMicPeers = () => {
+    for (const peerId of Array.from(micPeersRef.current.keys())) {
+      closeMicPeer(peerId);
+    }
+    pendingMicOffersRef.current.clear();
+  };
+
+  // Offer mic connections to every participant with a "greater" id that doesn't have one yet
+  const ensureMicOffers = (participants: { id: string }[]) => {
+    if (micReadyRef.current === "pending") return;
+    for (const p of participants) {
+      if (p.id !== currentUser.id && currentUser.id < p.id && !micPeersRef.current.has(p.id)) {
+        createMicOffer(p.id);
+      }
+    }
+  };
+
+  // Answer offers that arrived while our microphone was still being resolved
+  const drainPendingMicOffers = async () => {
+    for (const [senderId, sdp] of Array.from(pendingMicOffersRef.current.entries())) {
+      pendingMicOffersRef.current.delete(senderId);
+      await acceptMicOffer(senderId, sdp);
+    }
+  };
+
   // Start microphone and speaking detector
   const startMicrophone = async () => {
     try {
@@ -592,6 +958,11 @@ export default function App() {
             : true,
       });
       setLocalMicStream(stream);
+      localMicStreamRef.current = stream;
+      micReadyRef.current = "ready";
+
+      // Apply current mute state to the fresh track
+      stream.getAudioTracks().forEach((t) => (t.enabled = !isMutedRef.current));
 
       // Voice Activity Detector
       const vad = new VoiceActivityDetector((speaking) => {
@@ -609,16 +980,23 @@ export default function App() {
       vadRef.current = vad;
     } catch (err) {
       console.warn("Microphone access not granted or unavailable:", err);
+      micReadyRef.current = "failed";
+    } finally {
+      // Even without a mic we must answer pending offers so we can hear others,
+      // and initiate offers that were waiting for our mic to resolve.
+      await drainPendingMicOffers();
+      const rs = roomStateRef.current;
+      if (rs) ensureMicOffers(rs.participants);
     }
   };
 
   // Toggle Mute / Unmute
   const handleToggleMute = () => {
-    const nextMuted = !isMuted;
+    const nextMuted = !isMutedRef.current;
     setIsMuted(nextMuted);
 
-    if (localMicStream) {
-      localMicStream.getAudioTracks().forEach((t) => {
+    if (localMicStreamRef.current) {
+      localMicStreamRef.current.getAudioTracks().forEach((t) => {
         t.enabled = !nextMuted;
       });
     }
@@ -669,9 +1047,18 @@ export default function App() {
 
   // Stop Screen Sharing
   const handleStopScreenShare = () => {
-    if (localScreenStream) {
-      localScreenStream.getTracks().forEach((t) => t.stop());
+    if (localScreenStreamRef.current) {
+      localScreenStreamRef.current.getTracks().forEach((t) => t.stop());
       setLocalScreenStream(null);
+
+      // Close the screen peer connections we had open towards viewers
+      peerConnectionsRef.current.forEach((pc) => {
+        try {
+          pc.close();
+        } catch {}
+      });
+      peerConnectionsRef.current.clear();
+      pendingIceCandidatesRef.current.clear();
     }
 
     if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -693,49 +1080,61 @@ export default function App() {
 
   // Leave room and cleanup
   const leaveRoom = () => {
-    if (roomState) {
+    const activeRoom = roomStateRef.current;
+    if (activeRoom && sessionStartTimeRef.current > 0) {
       // Save session to history
-      const durationSeconds = Math.round((Date.now() - sessionStartTime) / 1000);
+      const durationSeconds = Math.round((Date.now() - sessionStartTimeRef.current) / 1000);
       addSessionToHistory({
-        roomId: roomState.id,
-        roomName: roomState.name,
-        joinedAt: sessionStartTime,
+        roomId: activeRoom.id,
+        roomName: activeRoom.name,
+        joinedAt: sessionStartTimeRef.current,
         leftAt: Date.now(),
         durationSeconds: Math.max(1, durationSeconds),
-        role: roomState.hostId === currentUser.id ? "admin" : "participant",
-        maxParticipants: roomState.participants.length,
-        streamQualityUsed: roomState.activeScreenConfig?.resolution,
+        role: activeRoom.hostId === currentUser.id ? "admin" : "participant",
+        maxParticipants: activeRoom.participants.length,
+        streamQualityUsed: activeRoom.activeScreenConfig?.resolution,
       });
       setHistory(loadSessionHistory());
     }
 
     // Stop streams
-    if (localScreenStream) {
-      localScreenStream.getTracks().forEach((t) => t.stop());
+    if (localScreenStreamRef.current) {
+      localScreenStreamRef.current.getTracks().forEach((t) => t.stop());
       setLocalScreenStream(null);
     }
-    if (localMicStream) {
-      localMicStream.getTracks().forEach((t) => t.stop());
+    if (localMicStreamRef.current) {
+      localMicStreamRef.current.getTracks().forEach((t) => t.stop());
       setLocalMicStream(null);
+      localMicStreamRef.current = null;
     }
+    micReadyRef.current = "pending";
     if (vadRef.current) {
       vadRef.current.stop();
       vadRef.current = null;
     }
 
-    // Close peer connections
+    // Close peer connections (screen + voice mesh)
     peerConnectionsRef.current.forEach((pc) => pc.close());
     peerConnectionsRef.current.clear();
+    pendingIceCandidatesRef.current.clear();
+    closeAllMicPeers();
 
-    // Close websocket
+    // Close websocket (mark intentional so no reconnect is attempted)
+    intentionalCloseRef.current = true;
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
     if (wsRef.current) {
       wsRef.current.close();
       wsRef.current = null;
     }
+    reconnectAttemptsRef.current = 0;
 
     setRoomState(null);
     setCurrentRoomId(null);
     setRemoteScreenStream(null);
+    setIsSpeaking(false);
     updateUrlParam(null);
   };
 
@@ -868,27 +1267,31 @@ export default function App() {
     leaveRoom();
   };
 
+  // Apply a new screen config (resolution/preset/fps) on the fly without restarting the stream
+  const handleApplyScreenConfig = (newConfig: ScreenConfig) => {
+    setScreenConfig(newConfig);
+    if (!localScreenStreamRef.current) return;
+
+    // Re-tune sender bitrates for all connected peers
+    peerConnectionsRef.current.forEach((pc) => {
+      pc.getSenders().forEach((sender) => {
+        if (sender.track?.kind === "video") {
+          tuneSenderBitrate(sender, newConfig);
+        }
+      });
+    });
+    // Notify room (dedicated message: no chat spam)
+    wsRef.current?.send(
+      JSON.stringify({
+        type: "screen:update_config",
+        config: newConfig,
+      })
+    );
+  };
+
   // Change resolution on the fly
   const handleSelectResolution = (res: ResolutionOption) => {
-    const updated = { ...screenConfig, resolution: res };
-    setScreenConfig(updated);
-    if (localScreenStream) {
-      // Re-tune sender bitrates for all connected peers
-      peerConnectionsRef.current.forEach((pc) => {
-        pc.getSenders().forEach((sender) => {
-          if (sender.track?.kind === "video") {
-            tuneSenderBitrate(sender, updated);
-          }
-        });
-      });
-      // Notify room
-      wsRef.current?.send(
-        JSON.stringify({
-          type: "screen:start",
-          config: updated,
-        })
-      );
-    }
+    handleApplyScreenConfig({ ...screenConfigRef.current, resolution: res });
   };
 
   // Keyboard shortcuts (M for mute, Spacebar)
@@ -1066,10 +1469,7 @@ export default function App() {
         onClose={() => setIsQualityModalOpen(false)}
         config={screenConfig}
         onChangeConfig={(newConfig) => {
-          setScreenConfig(newConfig);
-          if (localScreenStream) {
-            handleSelectResolution(newConfig.resolution);
-          }
+          handleApplyScreenConfig(newConfig);
         }}
         isTransmitting={Boolean(localScreenStream)}
       />
